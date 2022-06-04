@@ -116,6 +116,7 @@ def predict_gender(input_path: str):
         frame = image_resize(frame, width=frame_width)
     # predict the faces
     faces = get_faces(frame)
+    print(faces)
     # Loop over the faces detected
     # for idx, face in enumerate(faces):
     for i, (start_x, start_y, end_x, end_y) in enumerate(faces):
@@ -154,9 +155,48 @@ def predict_gender(input_path: str):
     # Cleanup
     cv2.destroyAllWindows()
 
+def predict_gender_simple(input_path: str):
+    """Predict the gender of the faces showing in the image"""
+    # Read Input Image
+    img = cv2.imread(input_path)
+    # resize the image, uncomment if you want to resize the image
+    # img = cv2.resize(img, (frame_width, frame_height))
+    # Take a copy of the initial image and resize it
+    frame = img.copy()
+    if frame.shape[1] > frame_width:
+        frame = image_resize(frame, width=frame_width)
+    # predict the faces
+    faces = get_faces(frame)
+    print(faces)
+    # Loop over the faces detected
+    # for idx, face in enumerate(faces):
+    for i, (start_x, start_y, end_x, end_y) in enumerate(faces):
+        face_img = frame[start_y: end_y, start_x: end_x]
+        # image --> Input image to preprocess before passing it through our dnn for classification.
+        # scale factor = After performing mean substraction we can optionally scale the image by some factor. (if 1 -> no scaling)
+        # size = The spatial size that the CNN expects. Options are = (224*224, 227*227 or 299*299)
+        # mean = mean substraction values to be substracted from every channel of the image.
+        # swapRB=OpenCV assumes images in BGR whereas the mean is supplied in RGB. To resolve this we set swapRB to True.
+        blob = cv2.dnn.blobFromImage(image=face_img, scalefactor=1.0, size=(
+            227, 227), mean=MODEL_MEAN_VALUES, swapRB=False, crop=False)
+        # Predict Gender
+        gender_net.setInput(blob)
+        gender_preds = gender_net.forward()
+        i = gender_preds[0].argmax()
+        gender = GENDER_LIST[i]
+        gender_confidence_score = gender_preds[0][i]
 
+        print(f'gender => {gender}')
+        print(f'gender_confidence_score => {gender_confidence_score}')
+
+        # Display processed image
+    #display_img("Gender Estimator", frame)
+    # uncomment if you want to save the image
+    #cv2.imwrite("output.jpg", frame)
+    # Cleanup
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     # Parsing command line arguments entered by user
     import sys
-    predict_gender(sys.argv[1])
+    predict_gender_simple(sys.argv[1])
